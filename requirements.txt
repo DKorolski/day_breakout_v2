@@ -1,0 +1,7 @@
+aiohttp==3.8.1
+aiomoex==2.0.0
+asyncio==3.4.3
+PyYAML==6.0.2
+numpy==1.26.4
+pandas==2.2.3
+backtrader @ git+https://github.com/mementum/backtrader.git@b853d7c90b6721476eb5a5ea3135224e33db1f14

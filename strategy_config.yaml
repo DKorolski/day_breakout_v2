@@ -1,0 +1,12 @@
+strategy:
+  commission_rate: 0.000166
+  k: 0.6
+  stop1_range: 0.5
+  stop2_range: 0.3
+  big_move_threshold: 0.025
+  min_range: 0.01
+  exclude_weekends: true
+  wait_hours: 1
+  tf_min: 1
+  amount: 0.98  # возможно, этот параметр стоит пересмотреть или заменить логикой расчета
+  test: true  # true = фиксированный лот (1 лот), false = 0.9 от капитала
