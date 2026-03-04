@@ -1,11 +1,15 @@
 # Sample Metrics
 
-- Mode: `backtest`
+- Mode: `backtest` (QuantStats report)
 - Symbol: `USDRUBF`
-- Period: `2025-01-01` -> `2025-03-31`
-- Initial cash: `100000.00`
-- Final portfolio value: `101240.00`
-- Net PnL: `1240.00`
-- Return: `1.24%`
+- Period: `2022-04-26` -> `2025-01-31`
+- Cumulative Return: `69.52%`
+- CAGR: `14.06%`
+- Sharpe: `1.85`
+- Sortino: `4.23`
+- Max Drawdown: `-8.59%`
+- Volatility (ann.): `10.51%`
+- Calmar: `1.64`
+- Profit Factor: `1.65`
 
-> These numbers are illustrative sample output for repository showcase purposes.
+Source: `docs/stats_usdrub_ver_2.html`

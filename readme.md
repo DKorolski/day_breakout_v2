@@ -8,6 +8,20 @@ Config: see `strategy_config.yaml` (table below).
 
 Limitations: backtest assumptions, fees/slippage, market schedule.
 
+## Showcase Results (Sample Run)
+
+- Mode: `backtest` (QuantStats report)
+- Symbol: `USDRUBF`
+- Period: `2022-04-26` -> `2025-01-31`
+- Cumulative Return: `69.52%`
+- CAGR: `14.06%`
+- Sharpe: `1.85`
+- Max Drawdown: `-8.59%`
+- Volatility (ann.): `10.51%`
+- Profit Factor: `1.65`
+- Full sample metrics: [`reports/sample_metrics.md`](reports/sample_metrics.md)
+- Source artifact: `docs/stats_usdrub_ver_2.html`
+
 ## Strategy Rules (10 lines)
 
 1. Build yesterday's high/low/close and daily range from intraday candles.
@@ -74,6 +88,7 @@ python3 run_backtest.py --config strategy_config.yaml --mode paper
 ```
 
 Note: `paper` here is a simulation run over the most recent 30 calendar days (no real broker routing).
+`paper != broker paper trading`; it is a local simulation run.
 
 ## Market Schedule Notes
 
