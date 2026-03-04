@@ -1,3 +1,13 @@
+run:
+  symbol: USDRUBF
+  start: "2025-01-01"
+  end: "2025-03-31"
+  mode: backtest
+  initial_cash: 100000
+  log_level: INFO
+  log_file: artifacts/example_logs/trading_robot_strategy.log
+  metrics_output: reports/sample_metrics.md
+
 strategy:
   commission_rate: 0.000166
   k: 0.6
@@ -8,5 +18,5 @@ strategy:
   exclude_weekends: true
   wait_hours: 1
   tf_min: 1
-  amount: 0.98  # возможно, этот параметр стоит пересмотреть или заменить логикой расчета
-  test: true  # true = фиксированный лот (1 лот), false = 0.9 от капитала
+  amount: 0.98
+  test: true

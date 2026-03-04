@@ -1,72 +1,108 @@
-# Торговый Робот Day Break Out ver 2
+# day_breakout_v2
 
-Этот торговый робот реализует стратегию, основанную на анализе эксцесса дневных приращений цен. Основная идея заключается в том, что «после преодоления некоего порога рынок скорее продолжит свое движение, чем развернется обратно». Робот анализирует экстремальные изменения цены за предыдущий день для определения входных сигналов и управления рисками.
+What it is: Intraday breakout strategy (Backtrader/Python) with YAML config + reproducible runs.
 
-## Основные принципы стратегии
+Quickstart: `pip install -r requirements.txt && python3 run_backtest.py --config strategy_config.yaml`
 
-1. **Ложные входы при низких значениях K:**  
-   При заниженном коэффициенте K наблюдается множество ложных входов, что снижает эффективность торговли.
+Config: see `strategy_config.yaml` (table below).
 
-2. **Запоздалые входы при высоких значениях K:**  
-   При завышенном значении K сигналы генерируются с задержкой, что может привести к упущению оптимальных моментов входа.
+Limitations: backtest assumptions, fees/slippage, market schedule.
 
-3. **Разворотная формация в первый час торгов:**  
-   Существует систематическая особенность: если в первой половине часа наблюдается существенное движение в определённую сторону, то во второй половине часа и некоторое время после, как правило, происходит разворот направления. Поэтому, чтобы избежать ложных сигналов, первые 60 минут торговли пропускаются.
+## Strategy Rules (10 lines)
 
-4. **Низкая волатильность предыдущего дня:**  
-   Некорректные входы часто наблюдаются после дней с аномально низкой волатильностью (например, торговые субботы или дни закрытого американского рынка). После таких дней рекомендуется воздержаться от торговли.
+1. Build yesterday's high/low/close and daily range from intraday candles.
+2. Skip trading on weekends when `exclude_weekends=true`.
+3. Wait `wait_hours` from session start before allowing new entries.
+4. Do not trade when yesterday's range is below `min_range`.
+5. Disable long entries after an overly negative previous day return.
+6. Disable short entries after an overly positive previous day return.
+7. Long breakout level is `yesterday_close + k * yesterday_range`.
+8. Short breakout level is `yesterday_close - k * yesterday_range`.
+9. Position size is fixed to 1 in test mode, otherwise based on cash and `amount`.
+10. Exit with stop logic (`stop1_range`, `stop2_range`) and end-of-day close rule.
 
-5. **Вход против сильного движения накануне:**  
-   Анализ показывает, что входы в направлении, противоположном сильному движению предыдущего дня, в среднем имеют отрицательное математическое ожидание (МО).
+## Market / Timeframe
 
-Стратегия тестировалась как на 10-минутном, так и на 1-минутном фреймах. В текущей реализации используется 1-минутный таймфрейм.
+- Market: MOEX futures stream via `aiomoex` (default symbol: `USDRUBF`).
+- Base timeframe: 1-minute candles (`tf_min` in config).
+- Engine: Backtrader.
+- Data source: `moex_parser2.py`.
 
-## Особенности
+## Config
 
-- **Анализ эксцесса:**  
-  Основной упор делается на анализ нормального распределения (kurtosis) дневных приращений цен для поиска оптимальных точек входа.
+### `run` section
 
-- **Гибкая настройка параметров:**  
-  Все ключевые параметры (например, коэффициент K, диапазоны стоп-лоссов, временные фильтры) задаются через YAML-конфигурационный файл.
+| Name | Meaning | Typical range / values |
+|---|---|---|
+| `symbol` | Instrument ticker | `USDRUBF` (or other MOEX symbol) |
+| `start` | Backtest start date | `YYYY-MM-DD` |
+| `end` | Backtest end date | `YYYY-MM-DD` |
+| `mode` | Run mode | `backtest` or `paper` |
+| `initial_cash` | Starting cash | `> 0` |
+| `log_level` | Logging verbosity | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `log_file` | Log output path | e.g. `artifacts/example_logs/trading_robot_strategy.log` |
+| `metrics_output` | Metrics markdown output | e.g. `reports/sample_metrics.md` |
 
-- **Управление рисками:**  
-  Реализованы два уровня стоп-лоссов, что позволяет минимизировать возможные убытки.
+### `strategy` section
 
-- **Тестовый режим:**  
-  При включении тестового режима (`test: true`) размер позиции фиксируется равным 1. В противном случае размер позиции рассчитывается исходя из доступных средств (amount в параметрах).
+| Name | Meaning | Typical range / values |
+|---|---|---|
+| `commission_rate` | Commission per trade | `0.00005`-`0.001` |
+| `k` | Breakout multiplier for yesterday range | `0.2`-`1.5` |
+| `stop1_range` | Intraday stop level #1 (fraction of yesterday range) | `0.1`-`1.0` |
+| `stop2_range` | Intraday stop level #2 (fraction of yesterday range) | `0.05`-`0.8` |
+| `big_move_threshold` | Filter for strong previous-day return | `0.005`-`0.05` |
+| `min_range` | Minimal yesterday range required to trade | `0.001`-`0.05` |
+| `exclude_weekends` | Skip weekends | `true` / `false` |
+| `wait_hours` | No-entry buffer from session start | `0`-`3` |
+| `tf_min` | Candle compression in minutes | `1`, `5`, `10`, ... |
+| `amount` | Fraction of available cash to allocate | `0.1`-`1.0` |
+| `test` | Fixed lot mode | `true` / `false` |
 
-## Требования
+## How to Run
 
-- Python 3.7+
-- [Backtrader](https://www.backtrader.com/)
-- [pandas](https://pandas.pydata.org/)
-- [PyYAML](https://pyyaml.org/)
-- Модуль `moex_parser2` для получения данных с биржи MOEX
+### Backtest
 
-## Установка
+```bash
+python3 run_backtest.py --config strategy_config.yaml --mode backtest
+```
 
-1. Установите необходимые библиотеки:
+### Paper (simulation mode)
 
-    ```bash
-    pip install backtrader pandas pyyaml
-    ```
+```bash
+python3 run_backtest.py --config strategy_config.yaml --mode paper
+```
 
-2. Убедитесь, что модуль `moex_parser2` находится в вашем проекте.
+Note: `paper` here is a simulation run over the most recent 30 calendar days (no real broker routing).
 
-## Конфигурация
+## Market Schedule Notes
 
-Параметры стратегии задаются в файле `strategy_config.yaml`. Пример содержимого файла:
+- Weekend bars are skipped when `exclude_weekends=true`.
+- The strategy waits `wait_hours` after session start to avoid open-noise entries.
+- End-of-day close logic currently triggers at `23:40` strategy time.
+- MOEX clearing breaks/holiday microstructure are not fully modeled in this showcase.
 
-```yaml
-strategy:
-  commission_rate: 0.00017
-  k: 0.6
-  stop1_range: 0.5
-  stop2_range: 0.3
-  big_move_threshold: 0.025
-  min_range: 0.01
-  exclude_weekends: true
-  wait_hours: 0
-  tf_min: 10
-  amount: 0.98
-  test: true
+## Reproducible Run
+
+1. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Run with explicit config:
+
+```bash
+python3 run_backtest.py --config strategy_config.yaml
+```
+
+3. Check artifacts:
+
+- Logs: `artifacts/example_logs/trading_robot_strategy.log`
+- Metrics: `reports/sample_metrics.md`
+- Equity sample image: `reports/sample_equity.png`
+
+## Results Artifacts
+
+- [Sample metrics](reports/sample_metrics.md)
+- [Sample equity curve image](reports/sample_equity.png)

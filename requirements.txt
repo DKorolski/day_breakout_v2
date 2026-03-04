@@ -1,6 +1,5 @@
 aiohttp==3.8.1
 aiomoex==2.0.0
-asyncio==3.4.3
 PyYAML==6.0.2
 numpy==1.26.4
 pandas==2.2.3

@@ -1,13 +1,20 @@
-import backtrader as bt
 import datetime
 import logging
-logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
-from moex_parser2 import moex_candles
+from pathlib import Path
+
+import backtrader as bt
 import yaml
 
-def load_config(config_path='strategy_config.yaml'):
-    with open(config_path, 'r', encoding='utf-8') as f:
+from moex_parser2 import moex_candles
+
+logging.getLogger("matplotlib.font_manager").setLevel(logging.WARNING)
+
+
+def load_config(config_path: str = "strategy_config.yaml") -> dict:
+    with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
+    if not isinstance(config, dict):
+        raise ValueError(f"Config must be a dictionary, got: {type(config).__name__}")
     return config
 
 class SingleTFBreakoutStrategy(bt.Strategy):
@@ -223,46 +230,57 @@ class SingleTFBreakoutStrategy(bt.Strategy):
         if trade.isclosed:
             self.logger.info(f"[TRADE] closed: PnL={trade.pnl:.2f}, Net={trade.pnlcomm:.2f}")
 
-# Запуск стратегии
-if __name__ == '__main__':
+def main() -> None:
+    log_path = Path("artifacts/example_logs/trading_robot_strategy.log")
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler("trading_robot_strategy.log", mode='a', encoding='utf-8')
-        ]
+            logging.FileHandler(
+                str(log_path), mode="a", encoding="utf-8"
+            ),
+        ],
     )
     logger = logging.getLogger("Main")
     logger.info("Старт стратегии")
 
-    config = load_config()
-    strat_params = config.get('strategy', {})
+    config_path = Path("strategy_config.yaml")
+    config = load_config(str(config_path))
+    strat_params = config.get("strategy", {})
     logger.debug(f"Загруженные параметры стратегии: {strat_params}")
-    #можно подавать и 10 минут
-    df_1m = moex_candles('USDRUBF', '1', '2025-01-01','2025-03-31')
+    tf_min = int(strat_params.get("tf_min", 1))
+    df_data = moex_candles("USDRUBF", str(tf_min), "2025-01-01", "2025-03-31")
 
     cerebro = bt.Cerebro()
-    datafeed = bt.feeds.PandasData(dataname=df_1m, timeframe=bt.TimeFrame.Minutes, compression=1)
+    datafeed = bt.feeds.PandasData(
+        dataname=df_data,
+        timeframe=bt.TimeFrame.Minutes,
+        compression=tf_min,
+    )
     cerebro.adddata(datafeed)
 
     cerebro.addstrategy(
         SingleTFBreakoutStrategy,
-        commission_rate=strat_params.get('commission_rate', 0.000066),
-        k=strat_params.get('k', 0.6),
-        stop1_range=strat_params.get('stop1_range', 0.5),
-        stop2_range=strat_params.get('stop2_range', 0.3),
-        big_move_threshold=strat_params.get('big_move_threshold', 0.025),
-        min_range=strat_params.get('min_range', 0.01),
-        exclude_weekends=strat_params.get('exclude_weekends', True),
-        wait_hours=strat_params.get('wait_hours', 0),
-        tf_min=strat_params.get('tf_min', 1),
-        amount=strat_params.get('amount', 0.98),
-        test=strat_params.get('test', False)  # Чтение нового параметра из конфига
+        commission_rate=strat_params.get("commission_rate", 0.000066),
+        k=strat_params.get("k", 0.6),
+        stop1_range=strat_params.get("stop1_range", 0.5),
+        stop2_range=strat_params.get("stop2_range", 0.3),
+        big_move_threshold=strat_params.get("big_move_threshold", 0.025),
+        min_range=strat_params.get("min_range", 0.01),
+        exclude_weekends=strat_params.get("exclude_weekends", True),
+        wait_hours=strat_params.get("wait_hours", 0),
+        tf_min=tf_min,
+        amount=strat_params.get("amount", 0.98),
+        test=strat_params.get("test", False),
     )
     cerebro.broker.setcash(100000.0)
-    cerebro.broker.setcommission(commission=0.00017)
-    cerebro.addanalyzer(bt.analyzers.PyFolio, _name='PyFolio')
+    cerebro.addanalyzer(bt.analyzers.PyFolio, _name="PyFolio")
 
     cerebro.run()
     logger.info(f"Final Portfolio Value: {cerebro.broker.getvalue():.2f}")
+
+
+if __name__ == "__main__":
+    main()
