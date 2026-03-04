@@ -1,4 +1,4 @@
-# day_breakout_v2
+# Python backtesting repo (Backtrader): intraday breakout strategy with YAML config + reproducible runs.
 
 What it is: Intraday breakout strategy (Backtrader/Python) with YAML config + reproducible runs.
 
